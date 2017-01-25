@@ -217,9 +217,29 @@ module Fluent::Plugin
       end
     end
 
+    def shutdown
+      p(here: "out_forward: running shutdown", ancestors: self.singleton_class.ancestors) if @now_debugging
+      super
+      p(here: "out_forward: ran shutdown", shutdown: self.shutdown?) if @now_debugging
+    end
+
+    def after_shutdown
+      p(here: "out_forward: calling after_shutdown") if @now_debugging
+      super
+      p(here: "out_forward: called after_shutdown") if @now_debugging
+    end
+
     def close
+      p(here: "out_forward: calling close") if @now_debugging
       @usock.close if @usock
       super
+      p(here: "out_forward: called close") if @now_debugging
+    end
+
+    def terminate
+      p(here: "out_forward: calling terminate") if @now_debugging
+      super
+      p(here: "out_forward: called terminate") if @now_debugging
     end
 
     def write(chunk)

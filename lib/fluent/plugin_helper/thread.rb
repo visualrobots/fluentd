@@ -45,6 +45,10 @@ module Fluent
         until @_threads_mutex.synchronize{ @_threads.values.reduce(true){|r,t| r && !t[:_fluentd_plugin_helper_thread_running] } }
           if Fluent::Clock.now > timeout_at
             running_threads = @_threads.values.select{|t| t[:_fluentd_plugin_helper_thread_running]}.map{|t| t[:_fluentd_plugin_helper_thread_title] }
+            # this is just debugging
+            if running_threads.include?(:event_loop)
+              p(here: "event loop still running", event_loop: @_event_loop, known: @_event_loop_attached_watchers, actual: @_event_loop.watchers)
+            end
             raise "sleep timeout in shutting down threads, still running:#{running_threads.join(',')}"
           end
           sleep 0.1
@@ -133,6 +137,7 @@ module Fluent
       end
 
       def after_shutdown
+        p(here: "thread: calling after_shutdown") if @now_debugging
         super
         wakeup_threads = []
         @_threads_mutex.synchronize do
@@ -143,9 +148,11 @@ module Fluent
         wakeup_threads.each do |thread|
           thread.wakeup if thread.alive?
         end
+        p(here: "thread: called after_shutdown") if @now_debugging
       end
 
       def close
+        p(here: "thread: calling close") if @now_debugging
         @_threads_mutex.synchronize{ @_threads.keys }.each do |obj_id|
           thread = @_threads[obj_id]
           if !thread || thread.join(@_thread_wait_seconds)
@@ -154,9 +161,11 @@ module Fluent
         end
 
         super
+        p(here: "thread: called close") if @now_debugging
       end
 
       def terminate
+        p(here: "thread: calling terminate") if @now_debugging
         super
         @_threads_mutex.synchronize{ @_threads.keys }.each do |obj_id|
           thread = @_threads[obj_id]
@@ -169,6 +178,7 @@ module Fluent
           @_threads_mutex.synchronize{ @_threads.delete(obj_id) }
         end
         @_thread_wait_seconds = nil
+        p(here: "thread: called terminate") if @now_debugging
       end
     end
   end

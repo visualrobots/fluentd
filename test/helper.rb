@@ -1,3 +1,33 @@
+########## monkey patch for investigation in ruby-head environment
+require 'serverengine'
+module ServerEngine
+  module SocketManagerUnix
+    module ServerModule
+      def start_server(path)
+        path = File.expand_path(path)
+        @server = UNIXServer.new(path)
+        @thread = Thread.new do
+          Thread.current.report_on_exception = true if Thread.current.respond_to?(:report_on_exception=)
+          begin
+            while peer = @server.accept
+              Thread.new(peer, &method(:process_peer))  # process_peer calls send_socket
+            end
+          rescue => e
+            if @server.closed?
+              # ignore
+            else
+              raise e
+            end
+          end
+        end
+
+        return path
+      end
+    end
+  end
+end
+############### end of monkey patch
+
 # simplecov must be loaded before any of target code
 if ENV['SIMPLE_COV']
   require 'simplecov'

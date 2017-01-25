@@ -636,6 +636,7 @@ EOL
 
   test 'heartbeat_type_none' do
     @d = d = create_driver(CONFIG + "\nheartbeat_type none")
+    d.instance.now_debugging = true
     node = d.instance.nodes.first
     assert_equal Fluent::Plugin::ForwardOutput::NoneHeartbeatNode, node.class
 
@@ -650,6 +651,7 @@ EOL
 
   test 'heartbeat_type_udp' do
     @d = d = create_driver(CONFIG + "\nheartbeat_type udp")
+    d.instance.now_debugging = true
 
     d.instance.start
     usock = d.instance.instance_variable_get(:@usock)

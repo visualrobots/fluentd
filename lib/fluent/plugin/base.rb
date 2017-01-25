@@ -27,6 +27,7 @@ module Fluent
       State = Struct.new(:configure, :start, :after_start, :stop, :before_shutdown, :shutdown, :after_shutdown, :close, :terminate)
 
       attr_accessor :under_plugin_development
+      attr_accessor :now_debugging
 
       def initialize
         super
@@ -34,6 +35,7 @@ module Fluent
         @_context_router = nil
         @_fluentd_worker_id = nil
         @under_plugin_development = false
+        @now_debugging = false
       end
 
       def has_router?

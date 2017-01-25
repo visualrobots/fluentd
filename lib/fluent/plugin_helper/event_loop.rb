@@ -82,31 +82,46 @@ module Fluent
       end
 
       def shutdown
+        p(here: "event_loop: running shutdown") if @now_debugging
         @_event_loop_mutex.synchronize do
           @_event_loop_attached_watchers.reverse.each do |w|
+            p(here: "checking watcher status", watcher: w.class, attached: w.attached?) if @now_debugging
             if w.attached?
               begin
+                p(here: "detaching watcher", watcher: w.class) if @now_debugging
                 w.detach
+                p(here: "watcher detached", watcher: w.class) if @now_debugging
               rescue => e
+                p(here: "event_loop: rescue in shutdown", error: e.class, message: e.message)
                 log.warn "unexpected error while detaching event loop watcher", error: e
               end
             end
           end
         end
         timeout_at = Fluent::Clock.now + EVENT_LOOP_SHUTDOWN_TIMEOUT
+        p(here: "event_loop: still running shutdown", watchers: @_event_loop.watchers) if @now_debugging
         while @_event_loop_running
           if Fluent::Clock.now >= timeout_at
+            p(here: "event_loop: shutdown timeout while waiting event loop")
             log.warn "event loop does NOT exit until hard timeout."
             raise "event loop does NOT exit until hard timeout." if @under_plugin_development
             break
           end
           sleep 0.1
         end
-
+        p(here: "event_loop: calling super in shutdown") if @now_debugging
         super
+        p(here: "event_loop: ran shutdown") if @now_debugging
+      end
+
+      def after_shutdown
+        p(here: "event_loop: calling after_shutdown") if @now_debugging
+        super
+        p(here: "event_loop: called after_shutdown") if @now_debugging
       end
 
       def close
+        p(here: "event_loop: calling close") if @now_debugging
         if @_event_loop_running
           begin
             @_event_loop.stop # we cannot check loop is running or not
@@ -116,15 +131,18 @@ module Fluent
         end
 
         super
+        p(here: "event_loop: called close") if @now_debugging
       end
 
       def terminate
+        p(here: "event_loop: calling terminate") if @now_debugging
         @_event_loop = nil
         @_event_loop_running = false
         @_event_loop_mutex = nil
         @_event_loop_run_timeout = nil
 
         super
+        p(here: "event_loop: called terminate") if @now_debugging
       end
 
       # watcher to block to run event loop until shutdown
